@@ -5,7 +5,7 @@ contract AdminOnly {
     address public owner;
     uint public treasureBalance;
 
-    mapping(address => bool) public approvedUsers;
+    mapping(address => uint256) public approvedUsers;
     mapping(address => bool) public hasWithdrawn;
 
     modifier onlyOwner() {
@@ -22,8 +22,9 @@ contract AdminOnly {
     }
 
 
-    function approveUser(address user) external onlyOwner {
-        approvedUsers[user] = true;
+    function approveUser(address user, uint256 amount) public onlyOwner {
+        require(amount <= treasureBalance, "Not enough treasure available");
+        approvedUsers[user] = amount;
     }
 
 
@@ -36,11 +37,13 @@ contract AdminOnly {
         owner = newOwner;
     }
 
-
     function withdraw() external {
-        require(approvedUsers[msg.sender], "Not approved to withdraw");
+        uint256 allowance = approvedUsers[msg.sender];
+        require(allowance > 0, "You don't have any treasure allowance");
+
         require(!hasWithdrawn[msg.sender], "Already withdrawn");
-        require(treasureBalance > 0, "No treasure available");
+
+        require(allowance <= treasureBalance, "Not enough treasure in the chest");
 
         uint amount = treasureBalance / 10; 
         hasWithdrawn[msg.sender] = true;
